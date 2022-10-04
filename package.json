@@ -3,6 +3,7 @@
   "displayName": "vGoMod",
   "description": "visualization of go mod",
   "version": "0.0.1",
+  "publisher": "counten",
   "repository":"https://github.com/counten/vgomod",
   "engines": {
     "vscode": "^1.71.0"
