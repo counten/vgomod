@@ -7,6 +7,7 @@
 }
 
 #render {
+    margin-left: 10px;
     margin-top: 10px;
     margin-bottom: 10px;
 }
@@ -15,4 +16,8 @@
     border-bottom-style: solid;
     border-width: 1px;
     margin-bottom: 5px;
+}
+
+#highlight-node {
+    width: 40%;
 }

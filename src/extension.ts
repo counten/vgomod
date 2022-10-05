@@ -30,7 +30,7 @@ export function activate(context: vscode.ExtensionContext) {
 		);
 		updateView(currentPanel);
 
-		currentPanel.webview.html = getWebViewContent(context.extensionPath, "src/view/index.html");
+		currentPanel.webview.html = getWebViewContent(context.extensionPath, "resouces/index.html");
 	});
 
 	context.subscriptions.push(disposable);

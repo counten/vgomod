@@ -33,6 +33,9 @@ Initial release of vgomod, support of `go mod graph` command, Support image zoom
 ### 0.0.3
 - show `origin go mod graph result`
 
+### 0.0.4
+- bugfix: miss resouce file while package.
+
 ## Working with vgomod
 
 While you are dev a golang project, `Ctrl + P` in vscode and type `> go mod graph`, this extention will draw a graph of the mod dependency.

@@ -1,7 +1,9 @@
 var input = document.getElementById("input");
 var title = document.getElementById("title-area");
+var highlightNode = document.getElementById("highlight-node");
 var output = document.getElementById("output");
 var renderBtn = document.getElementById("render");
+
 mermaid.initialize({ startOnLoad: false });
 renderBtn.onclick = function () {
     let res = parseStdOut(input.value);
