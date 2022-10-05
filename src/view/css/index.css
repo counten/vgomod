@@ -1,0 +1,18 @@
+.mermaid {
+    overflow: hidden;
+}
+
+#input {
+    width: 100%;
+}
+
+#render {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+#btn-area {
+    border-bottom-style: solid;
+    border-width: 1px;
+    margin-bottom: 5px;
+}

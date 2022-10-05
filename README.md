@@ -25,6 +25,11 @@ none
 
 Initial release of vgomod, support of `go mod graph` command, Support image zoom in and zoom out.
 
+### 0.0.2
+- retain context when hidden
+- use local js file instead of cdn
+- async call `go mod graph` cmd
+
 ## Working with vgomod
 
 While you are dev a golang project, `Ctrl + P` in vscode and type `> go mod graph`, this extention will draw a graph of the mod dependency.

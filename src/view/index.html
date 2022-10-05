@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Go Mod Graph</title>
+    <link rel="stylesheet" href="css/index.css">
+</head>
+
+<body>
+    <script src="js/mermaid.min.js"></script>
+    <script src="js/d3.v6.min.js"></script>
+
+    <h1 id="title-area">go mod graph is running...</h1>
+    <div>
+        <textarea name="" id="input" rows="10">
+graph LR 
+0["demo root"] --> 1["demo dep1"]
+0 --> 2["demo dep2"] 
+2 --> 3["demo dep3"]
+		</textarea>
+    </div>
+    <div id="btn-area">
+        <button type="button" id="render">Render</button>
+    </div>
+    <div class="mermaid" id="output"></div>
+    <script src="js/index.js"></script>
+</body>
+
+</html>

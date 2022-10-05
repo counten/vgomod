@@ -3,13 +3,9 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as cmd from './cmd';
+import * as fs from 'fs';
 
-let graph = `
-	graph LR 
-	0["demo root"] --> 1["demo dep1"]
-	0 --> 2["demo dep2"] 
-	2 --> 3["demo dep3"]
-`;
+let graph = `undefined`;
 let title = "undefined";
 
 // this method is called when your extension is activated
@@ -28,10 +24,14 @@ export function activate(context: vscode.ExtensionContext) {
 			vscode.ViewColumn.One, // 给新的webview面板一个编辑器视图
 			{
 				// 在webview中启用脚本
-				enableScripts: true
+				enableScripts: true,
+				// 隐匿时保存上下文
+				retainContextWhenHidden: true
 			} // Webview选项。
 		);
 		updateView(currentPanel);
+
+		currentPanel.webview.html = getWebViewContent(context.extensionPath, "src/view/index.html");
 	});
 
 	context.subscriptions.push(disposable);
@@ -47,8 +47,11 @@ async function updateView(panel: vscode.WebviewPanel) {
 	const document = activeTextEditor.document;
 	const documentDir = path.dirname(document.fileName);
 	await goModGraphCmd(documentDir);
-	// TODO 此处将获取 go mod graph 转为同步调用，因为 mermaid 异步渲染没有测试成功。
-	panel.webview.html = getWebviewContent();
+	panel.webview.postMessage({
+		command: 'refresh',
+		graph: graph,
+		title: title,
+	});
 }
 
 // call go mod graph cmd
@@ -65,39 +68,7 @@ async function goModGraphCmd(dir: string): Promise<void> {
 		if (exitCode !== 0) {
 			throw new Error(stderr.trim());
 		}
-
-		const splitted = stdout.split("\n");
-		// map mod dep to node name
-		let nodeMap = new Map();
-		let newGraph = `graph LR`;
-		let id = 0;
-		splitted.forEach(li => {
-			if (li && li.includes(" ") && li.includes("@") && !li.includes(":")) {
-				const mods = li.split(" ");
-				let from = mods[0];
-				if (id===0){
-					title = "mod graph of: "+from;
-				}
-				if (nodeMap.has(from)) {
-					from = nodeMap.get(from);
-				} else {
-					from = `N` + id + `["` + from + `"]`;
-					nodeMap.set(mods[0], `N` + id);
-					id++;
-				}
-				let to = mods[1];
-				if (nodeMap.has(to)) {
-					to = nodeMap.get(to);
-				} else {
-					to = `N` + id + `["` + to + `"]`;
-					nodeMap.set(mods[1], `N` + id);
-					id++;
-				}
-				// console.log("[vgomod] :", from, " --> ", to);
-				newGraph += "\n " + from + " --> " + to;
-			}
-		});
-		graph = newGraph;
+		graph = parseStdOut(stdout);
 	} catch (error: any) {
 		if (error.code === "ENOENT") {
 			vscode.window.showErrorMessage("[vgomod] ENOENT error");
@@ -107,46 +78,50 @@ async function goModGraphCmd(dir: string): Promise<void> {
 	}
 }
 
-function getWebviewContent() {
-	return `
-		  <!DOCTYPE html>
-		  <html lang="en">
-		  <head>
-			  <meta charset="UTF-8">
-			  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-			  <title>Go Mod Graph</title>
-			  <style type="text/css">
-				.mermaid {
-					overflow: hidden;
-				}
-			</style>
-		  </head>
-		  <body>
-			<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
-			<script src="https://d3js.org/d3.v6.min.js"></script>
-			<script>
-				mermaid.initialize({ startOnLoad: true });
-				window.addEventListener('load', function () {
-					var svgs = d3.selectAll(".mermaid svg");
-					svgs.each(function() {
-					  var svg = d3.select(this);
-					  svg.html("<g>" + svg.html() + "</g>");
-					  var inner = svg.select("g");
-					  var zoom = d3.zoom().on("zoom", function(event) {
-						inner.attr("transform", event.transform);
-					  });
-					  svg.call(zoom);
-					});
-				  });
-			</script>
-	
-			<h1 id="title-area">`+title+`</h1>
-			<div class="mermaid" id="graph-area">
-				`+ graph + `
-			</div>
-		  </body>
-		  </html>
- `;
+function parseStdOut(stdout: string): string {
+	const splitted = stdout.split("\n");
+	// map mod dep to node name
+	let nodeMap = new Map();
+	let newGraph = `graph LR`;
+	let id = 0;
+	splitted.forEach(li => {
+		if (li && li.includes(" ") && li.includes("@") && !li.includes(":")) {
+			const mods = li.split(" ");
+			let from = mods[0];
+			if (id === 0) {
+				title = "root: " + from;
+			}
+			if (nodeMap.has(from)) {
+				from = nodeMap.get(from);
+			} else {
+				from = `N` + id + `["` + from + `"]`;
+				nodeMap.set(mods[0], `N` + id);
+				id++;
+			}
+			let to = mods[1];
+			if (nodeMap.has(to)) {
+				to = nodeMap.get(to);
+			} else {
+				to = `N` + id + `["` + to + `"]`;
+				nodeMap.set(mods[1], `N` + id);
+				id++;
+			}
+			// console.log("[vgomod] :", from, " --> ", to);
+			newGraph += "\n " + from + " --> " + to;
+		}
+	});
+	return newGraph;
+}
+
+function getWebViewContent(extentionPath: string, templatePath: string) {
+	const resourcePath = path.join(extentionPath, templatePath);
+	const dirPath = path.dirname(resourcePath);
+	let html = fs.readFileSync(resourcePath, 'utf-8');
+	// vscode不支持直接加载本地资源，需要替换成其专有路径格式，这里只是简单的将样式和JS的路径替换
+	html = html.replace(/(<link.+?href="|<script.+?src="|<img.+?src=")(.+?)"/g, (m, $1, $2) => {
+		return $1 + vscode.Uri.file(path.resolve(dirPath, $2)).with({ scheme: 'vscode-resource' }).toString() + '"';
+	});
+	return html;
 }
 
 // this method is called when your extension is deactivated
