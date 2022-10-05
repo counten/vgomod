@@ -6,7 +6,6 @@ import * as cmd from './cmd';
 import * as fs from 'fs';
 
 let graph = `undefined`;
-let title = "undefined";
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -50,7 +49,7 @@ async function updateView(panel: vscode.WebviewPanel) {
 	panel.webview.postMessage({
 		command: 'refresh',
 		graph: graph,
-		title: title,
+		title: "origin mod graph:",
 	});
 }
 
@@ -68,7 +67,7 @@ async function goModGraphCmd(dir: string): Promise<void> {
 		if (exitCode !== 0) {
 			throw new Error(stderr.trim());
 		}
-		graph = parseStdOut(stdout);
+		graph = stdout;
 	} catch (error: any) {
 		if (error.code === "ENOENT") {
 			vscode.window.showErrorMessage("[vgomod] ENOENT error");
@@ -76,41 +75,6 @@ async function goModGraphCmd(dir: string): Promise<void> {
 			throw error;
 		}
 	}
-}
-
-function parseStdOut(stdout: string): string {
-	const splitted = stdout.split("\n");
-	// map mod dep to node name
-	let nodeMap = new Map();
-	let newGraph = `graph LR`;
-	let id = 0;
-	splitted.forEach(li => {
-		if (li && li.includes(" ") && li.includes("@") && !li.includes(":")) {
-			const mods = li.split(" ");
-			let from = mods[0];
-			if (id === 0) {
-				title = "root: " + from;
-			}
-			if (nodeMap.has(from)) {
-				from = nodeMap.get(from);
-			} else {
-				from = `N` + id + `["` + from + `"]`;
-				nodeMap.set(mods[0], `N` + id);
-				id++;
-			}
-			let to = mods[1];
-			if (nodeMap.has(to)) {
-				to = nodeMap.get(to);
-			} else {
-				to = `N` + id + `["` + to + `"]`;
-				nodeMap.set(mods[1], `N` + id);
-				id++;
-			}
-			// console.log("[vgomod] :", from, " --> ", to);
-			newGraph += "\n " + from + " --> " + to;
-		}
-	});
-	return newGraph;
 }
 
 function getWebViewContent(extentionPath: string, templatePath: string) {
